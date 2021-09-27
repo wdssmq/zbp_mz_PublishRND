@@ -3,6 +3,7 @@ require '../../../zb_system/function/c_system_base.php';
 require '../../../zb_system/function/c_system_admin.php';
 $zbp->Load();
 $action = 'root';
+
 if (!$zbp->CheckRights($action)) {
   $zbp->ShowError(6);
   die();
@@ -12,13 +13,36 @@ if (!$zbp->CheckPlugin('mz_PublishRND')) {
   die();
 }
 
-if (count($_POST) > 0) {
+$act = GetVars('act', 'GET');
+$suc = GetVars('suc', 'GET');
+if ($act == 'save') {
   CheckIsRefererValid();
+  foreach ($_POST as $key => $val) {
+    if (substr($key, 0, 5) == 'read_') {
+      continue;
+    }
+    $zbp->Config('mz_PublishRND')->$key = trim($val);
+  }
+  $zbp->SaveConfig('mz_PublishRND');
+  $zbp->BuildTemplate();
+  $zbp->SetHint('good');
+  Redirect('./main.php' . ($suc == null ? '' : "?act={$suc}"));
 }
+
+if ($act == 'delLog') {
+  CheckIsRefererValid();
+  $file = mz_PublishRND_Path("log.txt");
+  if (is_file($file)) {
+    unlink($file);
+  }
+  $zbp->SetHint('good');
+  Redirect('./main.php' . ($suc == null ? '' : "?act={$suc}"));
+}
+
 InstallPlugin_mz_PublishRND();
 $enCodeFeed = urlencode("{$zbp->host}feed.php");
-
 $blogtitle = '「随机版」自动发布';
+
 require $blogpath . 'zb_system/admin/admin_header.php';
 require $blogpath . 'zb_system/admin/admin_top.php';
 ?>
@@ -53,16 +77,19 @@ require $blogpath . 'zb_system/admin/admin_top.php';
     <p>订阅：<?php echo mz_PublishRND_a("https://www.innoreader.com/feed/{$enCodeFeed}", "订阅"); ?></p>
     <hr>
     <p><b>注：「随机」机制可能和你的预想不一样；</b></p>
+    <p>
+      查看日志：<?php echo mz_PublishRND_a(mz_PublishRND_Path("log.txt", "host"), "查看日志", "logs/log.txt"); ?> - 「 <?php echo mz_PublishRND_a(BuildSafeURL("main.php?act=delLog"), "删除日志", "删除日志","_self"); ?>」
+    </p>
   </div>
 </div>
 
 <?php
-function mz_PublishRND_a($href, $title, $text = "")
+function mz_PublishRND_a($href, $title, $text = "", $target = "_blank")
 {
   if (empty($text)) {
     $text = $href;
   }
-  return "<a target=\"_blank\" href=\"{$href}\" title=\"{$title}\">$text</a>";
+  return "<a target=\"{$target}\" href=\"{$href}\" title=\"{$title}\">$text</a>";
 }
 require $blogpath . 'zb_system/admin/admin_footer.php';
 RunTime();

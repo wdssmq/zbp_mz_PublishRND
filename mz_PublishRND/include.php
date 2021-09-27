@@ -8,22 +8,45 @@ function ActivePlugin_mz_PublishRND()
   Add_Filter_Plugin('Filter_Plugin_PostArticle_Core', 'mz_PublishRND_post');
   Add_Filter_Plugin('Filter_Plugin_Feed_End', 'mz_PublishRND_Run');
 }
+
 function mz_PublishRND_Run()
 {
   global $zbp;
   $curDate = (int)date('Ymd');
   $odds = $zbp->Config('mz_PublishRND')->odds;
-  $list = GetList(37, null, null, null, null,  null, array("post_status" => 2));
+  $list = mz_PublishRND_GetPostList($odds);
   foreach ($list as $article) {
-    if (false === strpos($article->Content, "<!--PubRND-->")) {
+    if (!mz_PublishRND_Check($article)) {
+      // 状态为审核但是没有设置发布标记
+      mz_PublishRND_Log("{$article->ID} - {$article->Url}");
       continue;
+    } else {
+      mz_PublishRND_Log("{$article->ID}");
     }
+    // 发布
     if (($curDate + $article->ID) % $odds == 0) {
+      mz_PublishRND_Log("{$article->ID} - {$article->Url} - 1");
       $article->Status = 0;
       $article->Save();
     }
   }
 }
+
+// 获取审核状态的文章
+function mz_PublishRND_GetPostList($num)
+{
+  global $zbp;
+  $w = array();
+  $w[] = array('=', 'log_Type', 0);
+  $w[] = array('=', 'log_Status', 2);
+  $order = array(
+    'log_ID' => 'ASC'
+  );
+  $Posts = $zbp->GetPostList('*', $w, $order, $num, null);
+  return $Posts;
+}
+
+// 添加标记
 function mz_PublishRND_post(&$article)
 {
   // global $zbp;
@@ -32,8 +55,21 @@ function mz_PublishRND_post(&$article)
   }
   $article->Status = 2;
   $article->Content = str_replace("<!--PubRND-->", "", $article->Content);
-  $article->Content .= "<!--PubRND-->";
+  $article->Content .= "\n<!--PubRND-->";
 }
+
+// 检查文章内标记
+function mz_PublishRND_Check($article)
+{
+  if (false !== strpos($article->Content, "<!--PubRND-->")) {
+    return true;
+  }
+  if ($article->Metas->HasKey('md_content') && false !== strpos($article->Metas->md_content, "<!--PubRND-->")) {
+    return true;
+  }
+  return false;
+}
+
 function mz_PublishRND_AddSwitch()
 {
 ?>
@@ -43,15 +79,68 @@ function mz_PublishRND_AddSwitch()
   </div>
 <?php
 }
+
+function mz_PublishRND_Log($msg)
+{
+  $msg = "msg: {$msg}\n";
+  $logFile = mz_PublishRND_Path("log.txt");
+  $logCon = file_get_contents($logFile);
+  $logCon = str_replace($msg, "", $logCon);
+  file_put_contents($logFile, $logCon . $msg);
+}
+
+function mz_PublishRND_Path($file, $t = 'path')
+{
+  global $zbp;
+  $result = $zbp->$t . 'zb_users/plugin/mz_PublishRND/';
+  switch ($file) {
+    case 'log.txt':
+      return $result . 'logs/log.txt';
+      break;
+    case 'main':
+      return $result . 'main.php';
+      break;
+    default:
+      return $result . $file;
+  }
+}
+
 function InstallPlugin_mz_PublishRND()
 {
   global $zbp;
   if (!$zbp->HasConfig('mz_PublishRND')) {
-    $zbp->Config('mz_PublishRND')->version = 1;
+    $zbp->Config('mz_PublishRND')->version = "1.1";
     $zbp->Config('mz_PublishRND')->odds = 37;
     $zbp->SaveConfig('mz_PublishRND');
   }
+  $dir = mz_PublishRND_Path("logs");
+  if (!is_dir($dir)) {
+    @mkdir($dir, 0755);
+  }
+  $file = mz_PublishRND_Path("log.txt");
+  if (!is_file($file)) {
+    file_put_contents($file, "");
+  }
 }
+
+// 插件升级时执行
+function UpdatePlugin_mz_PublishRND()
+{
+  global $zbp;
+  $version = $zbp->Config('mz_PublishRND')->version;
+  if (version_compare($version, '1.1', "<")) {
+    $zbp->Config('mz_PublishRND')->version = '1.1';
+    InstallPlugin_mz_PublishRND();
+    $zbp->SaveConfig('mz_PublishRND');
+  }
+}
+
+// 旧版兼容
+function mz_PublishRND_Updated()
+{
+  UpdatePlugin_mz_PublishRND();
+}
+
 function UninstallPlugin_mz_PublishRND()
 {
 }
