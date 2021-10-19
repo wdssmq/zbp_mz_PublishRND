@@ -12,7 +12,9 @@ function ActivePlugin_mz_PublishRND()
 function mz_PublishRND_Run()
 {
   global $zbp;
-  $curDate = (int)date('Ymd');
+  // $curDate = (int)date('Ymd');
+  $curTime = time();
+  $curDays = intval($curTime / 86400);
   $odds = $zbp->Config('mz_PublishRND')->odds;
   $list = mz_PublishRND_GetPostList($odds);
   foreach ($list as $article) {
@@ -24,7 +26,7 @@ function mz_PublishRND_Run()
       mz_PublishRND_Log("{$article->ID}");
     }
     // 发布
-    if (($curDate + $article->ID) % $odds == 0) {
+    if (($curDays + $article->ID) % $odds == 0) {
       mz_PublishRND_Log("{$article->ID} - {$article->Url} - 1");
       $article->Status = 0;
       $article->Save();
@@ -42,7 +44,7 @@ function mz_PublishRND_GetPostList($num)
   $order = array(
     'log_ID' => 'ASC'
   );
-  $Posts = $zbp->GetPostList('*', $w, $order, $num, null);
+  $Posts = $zbp->GetPostList('*', $w, $order, $num * 4, null);
   return $Posts;
 }
 
