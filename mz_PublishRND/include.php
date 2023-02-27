@@ -17,17 +17,28 @@ function mz_PublishRND_Run()
   $curDays = intval($curTime / 86400);
   $odds = $zbp->Config('mz_PublishRND')->odds;
   $list = mz_PublishRND_GetPostList($odds);
+  // 获取到的文章数量
+  $cntList = count($list);
+  mz_PublishRND_Log("count - {$cntList}");
   foreach ($list as $article) {
+    $log = "{$article->ID} - {$article->Url} - #tip#";
     if (!mz_PublishRND_Check($article)) {
       // 状态为审核但是没有设置发布标记
-      mz_PublishRND_Log("{$article->ID} - {$article->Url}");
+      // $tip = "需要设置发布标记";
+      $tip = "need set publish tag";
+      mz_PublishRND_Log(str_replace("#tip#", $tip, $log) . " -----");
+      mz_PublishRND_SetHint($article->Title, $article->ID);
       continue;
     } else {
-      mz_PublishRND_Log("{$article->ID}");
+      // $tip = "等待发布";
+      $tip = "wait publish";
+      mz_PublishRND_Log(str_replace("#tip#", $tip, $log));
     }
     // 发布
     if (($curDays + $article->ID) % $odds == 0) {
-      mz_PublishRND_Log("{$article->ID} - {$article->Url} - 1");
+      // $tip = "发布成功";
+      $tip = "publish success";
+      mz_PublishRND_Log(str_replace("#tip#", $tip, $log));
       $article->Status = 0;
       $article->Save();
     }
@@ -89,6 +100,15 @@ function mz_PublishRND_Log($msg)
   $logCon = file_get_contents($logFile);
   $logCon = str_replace($msg, "", $logCon);
   file_put_contents($logFile, $logCon . $msg);
+}
+
+function mz_PublishRND_SetHint($title, $id)
+{
+  global $zbp;
+  // 文章编辑地址
+  $edtUrl = $zbp->host . "zb_system/admin/edit.php?act=ArticleEdt&id={$id}";
+  $edtLink = "<a target=\"_blank\" href=\"{$edtUrl}\">{$title}</a>";
+  $zbp->SetHint("tips  hint_always", "「随机发布」文章未设置发布标记：{$edtLink}");
 }
 
 function mz_PublishRND_Path($file, $t = 'path')

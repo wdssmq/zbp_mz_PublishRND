@@ -71,25 +71,39 @@ require $blogpath . 'zb_system/admin/admin_top.php';
         </tr>
       </table>
     </form>
-    <p>访问触发：<?php echo mz_PublishRND_a($zbp->feedurl, "RSS 地址"); ?></p>
+    <p>访问触发：<?php echo mz_PublishRND_a($zbp->feedurl, "RSS 地址", "", "js-reload"); ?></p>
     <p>关于 RSS：<a href="https://bbs.zblogcn.com/thread-100631.html#488597" target="_blank" title="Z-Blog相关资讯RSS订阅-博友杂谈-ZBlogger技术交流中心">https://bbs.zblogcn.com/thread-100631.html#488597</a></p>
     <p>订阅：<?php echo mz_PublishRND_a("https://feeds.pub/feed/{$enCodeFeed}", "订阅"); ?></p>
     <p>订阅：<?php echo mz_PublishRND_a("https://www.innoreader.com/feed/{$enCodeFeed}", "订阅"); ?></p>
     <hr>
     <p><b>注：「随机」机制可能和你的预想不一样；</b></p>
+    <p>日志中「need set publish tag」表示该文章是审核状态，但是未设置自动发布；</p>
     <p>
-      查看日志：<?php echo mz_PublishRND_a(mz_PublishRND_Path("log.txt", "host"), "查看日志", "logs/log.txt"); ?> - 「 <?php echo mz_PublishRND_a(BuildSafeURL("main.php?act=delLog"), "删除日志", "删除日志","_self"); ?>」
+      查看日志：<?php echo mz_PublishRND_a(mz_PublishRND_Path("log.txt", "host"), "查看日志", "logs/log.txt"); ?> - 「 <?php echo mz_PublishRND_a(BuildSafeURL("main.php?act=delLog"), "删除日志", "删除日志", "", "_self"); ?>」
     </p>
   </div>
 </div>
 
+<script>
+  // 点击链接时刷新当前页面
+  $(function() {
+    $(".js-reload").on('click', function() {
+      $(this).data("reload", 1);
+    }).mouseout(function() {
+      if ($(this).data("reload") == 1) {
+        window.location.reload();
+      }
+    });
+  })
+</script>
+
 <?php
-function mz_PublishRND_a($href, $title, $text = "", $target = "_blank")
+function mz_PublishRND_a($href, $title, $text = "", $class = "mz-PubRnd", $target = "_blank")
 {
   if (empty($text)) {
     $text = $href;
   }
-  return "<a target=\"{$target}\" href=\"{$href}\" title=\"{$title}\">$text</a>";
+  return "<a class=\"{$class}\" target=\"{$target}\" href=\"{$href}\" title=\"{$title}\">$text</a>";
 }
 require $blogpath . 'zb_system/admin/admin_footer.php';
 RunTime();
