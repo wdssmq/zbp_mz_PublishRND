@@ -25,22 +25,22 @@ function mz_PublishRND_Run()
     if (!mz_PublishRND_Check($article)) {
       // 状态为审核但是没有设置发布标记
       // $tip = "需要设置发布标记";
-      $tip = "need set publish tag";
-      mz_PublishRND_Log(str_replace("#tip#", $tip, $log) . " -----");
+      $tip = "need set publish tag ------";
+      mz_PublishRND_Log(str_replace("#tip#", $tip, $log));
       mz_PublishRND_SetHint($article->Title, $article->ID);
       continue;
-    } else {
-      // $tip = "等待发布";
-      $tip = "wait publish";
-      mz_PublishRND_Log(str_replace("#tip#", $tip, $log));
     }
     // 发布
     if (($curDays + $article->ID) % $odds == 0) {
       // $tip = "发布成功";
-      $tip = "publish success";
+      $tip = "publish success ++++++";
       mz_PublishRND_Log(str_replace("#tip#", $tip, $log));
       $article->Status = 0;
       $article->Save();
+    } else {
+      // $tip = "等待发布";
+      $tip = "wait publish";
+      mz_PublishRND_Log(str_replace("#tip#", $tip, $log));
     }
   }
 }
