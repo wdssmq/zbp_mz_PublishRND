@@ -67,8 +67,8 @@ function mz_PublishRND_post(&$article)
     return;
   }
   $article->Status = 2;
-  $article->Content = str_replace("<!--PubRND-->", "", $article->Content);
-  $article->Content .= "\n<!--PubRND-->";
+  $article->Content = trim(str_replace("<!--PubRND-->", "", $article->Content));
+  $article->Content .= "\n\n<!--PubRND-->";
 }
 
 // 检查文章内标记
